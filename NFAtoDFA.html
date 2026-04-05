@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>NFA to DFA Converter</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #111; color: white; }
+    input, textarea, button {
+      margin: 5px; padding: 8px;
+      background: #222; color: white; border: 1px solid #555;
+    }
+    button { cursor: pointer; }
+    #output { white-space: pre; margin-top: 20px; background:#000; padding:10px; }
+  </style>
+</head>
+<body>
+
+<h2>NFA → DFA Converter</h2>
+
+States: <input id="states" value="q0,q1,q2"><br>
+Alphabet: <input id="alpha" value="a,b"><br>
+Start: <input id="start" value="q0"><br>
+Accept: <input id="accept" value="q2"><br>
+
+<h3>Transitions (format: state,symbol=states)</h3>
+<textarea id="transitions" rows="6" cols="50">
+q0,a=q0,q1
+q0,b=q0
+q1,b=q2
+</textarea><br>
+
+<button onclick="convert()">Convert</button>
+
+<div id="output"></div>
+
+<script>
+function parseList(str) {
+  return str.split(",").map(s => s.trim()).filter(s => s);
+}
+
+function convert() {
+  const states = parseList(document.getElementById("states").value);
+  const alpha = parseList(document.getElementById("alpha").value);
+  const start = document.getElementById("start").value.trim();
+  const accept = parseList(document.getElementById("accept").value);
+
+  const transInput = document.getElementById("transitions").value.trim().split("\n");
+
+  let trans = {};
+  states.forEach(s => trans[s] = {});
+
+  transInput.forEach(line => {
+    let [left, right] = line.split("=");
+    let [state, sym] = left.split(",");
+    trans[state][sym] = parseList(right);
+  });
+
+  function epsClosure(set) {
+    return set; // simplified (no epsilon for now)
+  }
+
+  function move(set, sym) {
+    let res = new Set();
+    set.forEach(s => {
+      if (trans[s] && trans[s][sym]) {
+        trans[s][sym].forEach(x => res.add(x));
+      }
+    });
+    return Array.from(res);
+  }
+
+  let dfaStates = [];
+  let queue = [];
+
+  let startSet = [start];
+  queue.push(startSet);
+  dfaStates.push(startSet);
+
+  let dfaTrans = {};
+
+  while (queue.length) {
+    let curr = queue.shift();
+    let key = curr.join(",");
+
+    dfaTrans[key] = {};
+
+    alpha.forEach(sym => {
+      let next = move(curr, sym);
+      next = [...new Set(next)].sort();
+
+      let nextKey = next.join(",");
+
+      dfaTrans[key][sym] = nextKey || "∅";
+
+      if (next.length && !dfaStates.some(s => s.join(",") === nextKey)) {
+        dfaStates.push(next);
+        queue.push(next);
+      }
+    });
+  }
+
+  let output = "DFA States:\n";
+  dfaStates.forEach((s,i) => {
+    output += `D${i} = { ${s.join(",")} }\n`;
+  });
+
+  output += "\nTransitions:\n";
+  for (let s in dfaTrans) {
+    for (let sym in dfaTrans[s]) {
+      output += `{${s}} --${sym}--> {${dfaTrans[s][sym]}}\n`;
+    }
+  }
+
+  document.getElementById("output").innerText = output;
+}
+</script>
+
+</body>
+</html>
