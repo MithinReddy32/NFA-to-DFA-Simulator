@@ -5,8 +5,8 @@
 
   <style>
     body {
-      font-family: Arial;
-      background: #0d0b1a;
+      font-family: "Segoe UI";
+      background: #0b0920;
       color: white;
       padding: 20px;
     }
@@ -16,12 +16,12 @@
     }
 
     input, textarea {
-      width: 300px;
       padding: 8px;
       margin: 5px 0;
       background: #111;
       color: white;
       border: 1px solid #555;
+      width: 300px;
     }
 
     textarea {
@@ -31,11 +31,9 @@
     button {
       padding: 10px 20px;
       background: #a78bfa;
-      color: black;
       border: none;
       cursor: pointer;
       font-weight: bold;
-      margin-top: 10px;
     }
 
     button:hover {
@@ -44,36 +42,37 @@
 
     table {
       border-collapse: collapse;
-      width: 100%;
       margin-top: 20px;
-      background: #111;
+      width: 70%;
+      font-size: 16px;
     }
 
     th, td {
-      border: 1px solid #555;
-      padding: 10px;
+      border: 1px solid #666;
+      padding: 12px;
       text-align: center;
     }
 
     th {
-      background: #1a1633;
-      color: #a78bfa;
+      background: #1c1836;
+      color: #c4b5fd;
     }
 
-    tr:hover {
-      background: #1a1a1a;
-    }
-
-    .state {
+    td:first-child {
       font-weight: bold;
       color: #a78bfa;
     }
 
-    #dfaOutput {
-      margin-top: 20px;
-      background: #000;
-      padding: 10px;
-      white-space: pre;
+    .start {
+      color: #4ade80;
+    }
+
+    .final {
+      color: #fbbf24;
+    }
+
+    tr:hover {
+      background: #151233;
     }
   </style>
 </head>
@@ -82,20 +81,19 @@
 
 <h2>NFA → DFA Converter</h2>
 
-States: <br>
+States:<br>
 <input id="states" value="q0,q1,q2"><br>
 
-Alphabet: <br>
+Alphabet:<br>
 <input id="alpha" value="a,b"><br>
 
-Start State: <br>
+Start:<br>
 <input id="start" value="q0"><br>
 
-Accept States: <br>
+Accept:<br>
 <input id="accept" value="q2"><br>
 
-<h3>Transitions (format: state,symbol=states)</h3>
-
+<h3>Transitions (state,symbol=states)</h3>
 <textarea id="transitions" rows="6">
 q0,a=q0,q1
 q0,b=q0
@@ -104,49 +102,13 @@ q1,b=q2
 
 <button onclick="convert()">Convert</button>
 
-<h3>NFA Transition Table</h3>
 <div id="tableOutput"></div>
 
-<h3>DFA Output</h3>
-<div id="dfaOutput"></div>
-
 <script>
-
 function parseList(str) {
   return str.split(",").map(s => s.trim()).filter(s => s);
 }
 
-// 🧠 Render Professional Table
-function renderTable(states, alpha, start, accept, trans) {
-  let html = "<table>";
-
-  html += "<tr><th>State</th>";
-  alpha.forEach(a => html += `<th>${a}</th>`);
-  html += "</tr>";
-
-  states.forEach(state => {
-    let label = state;
-
-    if (state === start) label = "→" + label;
-    if (accept.includes(state)) label = "*" + label;
-
-    html += `<tr>
-      <td class="state">${label}</td>`;
-
-    alpha.forEach(sym => {
-      let val = trans[state][sym] ? trans[state][sym].join(", ") : "—";
-      html += `<td>${val}</td>`;
-    });
-
-    html += "</tr>";
-  });
-
-  html += "</table>";
-
-  document.getElementById("tableOutput").innerHTML = html;
-}
-
-// 🧠 Convert NFA → DFA
 function convert() {
   const states = parseList(document.getElementById("states").value);
   const alpha = parseList(document.getElementById("alpha").value);
@@ -164,69 +126,54 @@ function convert() {
     trans[state][sym] = parseList(right);
   });
 
-  // Show NFA table
-  renderTable(states, alpha, start, accept, trans);
-
-  function move(set, sym) {
-    let res = new Set();
-    set.forEach(s => {
-      if (trans[s] && trans[s][sym]) {
-        trans[s][sym].forEach(x => res.add(x));
-      }
-    });
-    return Array.from(res);
-  }
-
-  let dfaStates = [];
-  let queue = [];
-
-  let startSet = [start];
-  queue.push(startSet);
-  dfaStates.push(startSet);
-
-  let dfaTrans = {};
-
-  while (queue.length) {
-    let curr = queue.shift();
-    let key = curr.join(",");
-
-    dfaTrans[key] = {};
-
-    alpha.forEach(sym => {
-      let next = move(curr, sym);
-      next = [...new Set(next)].sort();
-
-      let nextKey = next.join(",");
-
-      dfaTrans[key][sym] = nextKey || "∅";
-
-      if (next.length && !dfaStates.some(s => s.join(",") === nextKey)) {
-        dfaStates.push(next);
-        queue.push(next);
-      }
-    });
-  }
-
-  let output = "DFA States:\n";
-  dfaStates.forEach((s,i) => {
-    let label = `D${i} = { ${s.join(",")} }`;
-
-    if (s.includes(start)) label += " (Start)";
-    if (s.some(x => accept.includes(x))) label += " (Final)";
-
-    output += label + "\n";
-  });
-
-  output += "\nTransitions:\n";
-  for (let s in dfaTrans) {
-    for (let sym in dfaTrans[s]) {
-      output += `{${s}} --${sym}--> {${dfaTrans[s][sym]}}\n`;
-    }
-  }
-
-  document.getElementById("dfaOutput").innerText = output;
+  renderBetterTable(states, alpha, start, accept, trans);
 }
 
+function renderBetterTable(states, alpha, start, accept, trans) {
+  let html = "<table>";
+
+  // Header
+  html += "<tr><th>State / Alphabet</th>";
+  alpha.forEach(a => html += `<th>${a}</th>`);
+  html += "</tr>";
+
+  // Rows
+  states.forEach(state => {
+    let label = state;
+    let cls = "";
+
+    if (state === start) {
+      label = "→" + label;
+      cls = "start";
+    }
+
+    if (accept.includes(state)) {
+      label = "*" + label;
+      cls = "final";
+    }
+
+    html += `<tr><td class="${cls}">${label}</td>`;
+
+    alpha.forEach(sym => {
+      let val = trans[state][sym] ? trans[state][sym].join(", ") : "—";
+
+      // mark final inside cell
+      if (val !== "—") {
+        val = val.split(", ").map(s =>
+          accept.includes(s) ? "*" + s : s
+        ).join(", ");
+      }
+
+      html += `<td>${val}</td>`;
+    });
+
+    html += "</tr>";
+  });
+
+  html += "</table>";
+
+  document.getElementById("tableOutput").innerHTML = html;
+}
 </script>
 
 </body>
