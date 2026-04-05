@@ -24,9 +24,7 @@
       width: 300px;
     }
 
-    textarea {
-      width: 500px;
-    }
+    textarea { width: 500px; }
 
     button {
       padding: 10px 20px;
@@ -36,15 +34,10 @@
       font-weight: bold;
     }
 
-    button:hover {
-      background: #c4b5fd;
-    }
-
     table {
       border-collapse: collapse;
       margin-top: 20px;
       width: 70%;
-      font-size: 16px;
     }
 
     th, td {
@@ -61,18 +54,6 @@
     td:first-child {
       font-weight: bold;
       color: #a78bfa;
-    }
-
-    .start {
-      color: #4ade80;
-    }
-
-    .final {
-      color: #fbbf24;
-    }
-
-    tr:hover {
-      background: #151233;
     }
   </style>
 </head>
@@ -93,7 +74,7 @@ Start:<br>
 Accept:<br>
 <input id="accept" value="q2"><br>
 
-<h3>Transitions (state,symbol=states)</h3>
+<h3>Transitions</h3>
 <textarea id="transitions" rows="6">
 q0,a=q0,q1
 q0,b=q0
@@ -110,6 +91,8 @@ function parseList(str) {
 }
 
 function convert() {
+  console.log("NEW VERSION LOADED"); // debug
+
   const states = parseList(document.getElementById("states").value);
   const alpha = parseList(document.getElementById("alpha").value);
   const start = document.getElementById("start").value.trim();
@@ -126,38 +109,27 @@ function convert() {
     trans[state][sym] = parseList(right);
   });
 
-  renderBetterTable(states, alpha, start, accept, trans);
+  renderTable(states, alpha, start, accept, trans);
 }
 
-function renderBetterTable(states, alpha, start, accept, trans) {
+function renderTable(states, alpha, start, accept, trans) {
   let html = "<table>";
 
-  // Header
   html += "<tr><th>State / Alphabet</th>";
   alpha.forEach(a => html += `<th>${a}</th>`);
   html += "</tr>";
 
-  // Rows
   states.forEach(state => {
     let label = state;
-    let cls = "";
 
-    if (state === start) {
-      label = "→" + label;
-      cls = "start";
-    }
+    if (state === start) label = "→" + label;
+    if (accept.includes(state)) label = "*" + label;
 
-    if (accept.includes(state)) {
-      label = "*" + label;
-      cls = "final";
-    }
-
-    html += `<tr><td class="${cls}">${label}</td>`;
+    html += `<tr><td>${label}</td>`;
 
     alpha.forEach(sym => {
       let val = trans[state][sym] ? trans[state][sym].join(", ") : "—";
 
-      // mark final inside cell
       if (val !== "—") {
         val = val.split(", ").map(s =>
           accept.includes(s) ? "*" + s : s
