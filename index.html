@@ -2,27 +2,101 @@
 <html>
 <head>
   <title>NFA to DFA Converter</title>
+
   <style>
-    body { font-family: Arial; padding: 20px; background: #111; color: white; }
-    input, textarea, button {
-      margin: 5px; padding: 8px;
-      background: #222; color: white; border: 1px solid #555;
+    body {
+      font-family: Arial;
+      background: #0d0b1a;
+      color: white;
+      padding: 20px;
     }
-    button { cursor: pointer; }
-    #output { white-space: pre; margin-top: 20px; background:#000; padding:10px; }
+
+    h2 {
+      color: #a78bfa;
+    }
+
+    input, textarea {
+      width: 300px;
+      padding: 8px;
+      margin: 5px 0;
+      background: #111;
+      color: white;
+      border: 1px solid #555;
+    }
+
+    textarea {
+      width: 500px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #a78bfa;
+      color: black;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #c4b5fd;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+      background: #111;
+    }
+
+    th, td {
+      border: 1px solid #555;
+      padding: 10px;
+      text-align: center;
+    }
+
+    th {
+      background: #1a1633;
+      color: #a78bfa;
+    }
+
+    tr:hover {
+      background: #1a1a1a;
+    }
+
+    .state {
+      font-weight: bold;
+      color: #a78bfa;
+    }
+
+    #dfaOutput {
+      margin-top: 20px;
+      background: #000;
+      padding: 10px;
+      white-space: pre;
+    }
   </style>
 </head>
+
 <body>
 
 <h2>NFA → DFA Converter</h2>
 
-States: <input id="states" value="q0,q1,q2"><br>
-Alphabet: <input id="alpha" value="a,b"><br>
-Start: <input id="start" value="q0"><br>
-Accept: <input id="accept" value="q2"><br>
+States: <br>
+<input id="states" value="q0,q1,q2"><br>
+
+Alphabet: <br>
+<input id="alpha" value="a,b"><br>
+
+Start State: <br>
+<input id="start" value="q0"><br>
+
+Accept States: <br>
+<input id="accept" value="q2"><br>
 
 <h3>Transitions (format: state,symbol=states)</h3>
-<textarea id="transitions" rows="6" cols="50">
+
+<textarea id="transitions" rows="6">
 q0,a=q0,q1
 q0,b=q0
 q1,b=q2
@@ -30,33 +104,68 @@ q1,b=q2
 
 <button onclick="convert()">Convert</button>
 
-<div id="output"></div>
+<h3>NFA Transition Table</h3>
+<div id="tableOutput"></div>
+
+<h3>DFA Output</h3>
+<div id="dfaOutput"></div>
 
 <script>
+
 function parseList(str) {
   return str.split(",").map(s => s.trim()).filter(s => s);
 }
 
+// 🧠 Render Professional Table
+function renderTable(states, alpha, start, accept, trans) {
+  let html = "<table>";
+
+  html += "<tr><th>State</th>";
+  alpha.forEach(a => html += `<th>${a}</th>`);
+  html += "</tr>";
+
+  states.forEach(state => {
+    let label = state;
+
+    if (state === start) label = "→" + label;
+    if (accept.includes(state)) label = "*" + label;
+
+    html += `<tr>
+      <td class="state">${label}</td>`;
+
+    alpha.forEach(sym => {
+      let val = trans[state][sym] ? trans[state][sym].join(", ") : "—";
+      html += `<td>${val}</td>`;
+    });
+
+    html += "</tr>";
+  });
+
+  html += "</table>";
+
+  document.getElementById("tableOutput").innerHTML = html;
+}
+
+// 🧠 Convert NFA → DFA
 function convert() {
   const states = parseList(document.getElementById("states").value);
   const alpha = parseList(document.getElementById("alpha").value);
   const start = document.getElementById("start").value.trim();
   const accept = parseList(document.getElementById("accept").value);
 
-  const transInput = document.getElementById("transitions").value.trim().split("\n");
+  const lines = document.getElementById("transitions").value.trim().split("\n");
 
   let trans = {};
   states.forEach(s => trans[s] = {});
 
-  transInput.forEach(line => {
+  lines.forEach(line => {
     let [left, right] = line.split("=");
     let [state, sym] = left.split(",");
     trans[state][sym] = parseList(right);
   });
 
-  function epsClosure(set) {
-    return set; // simplified (no epsilon for now)
-  }
+  // Show NFA table
+  renderTable(states, alpha, start, accept, trans);
 
   function move(set, sym) {
     let res = new Set();
@@ -100,7 +209,12 @@ function convert() {
 
   let output = "DFA States:\n";
   dfaStates.forEach((s,i) => {
-    output += `D${i} = { ${s.join(",")} }\n`;
+    let label = `D${i} = { ${s.join(",")} }`;
+
+    if (s.includes(start)) label += " (Start)";
+    if (s.some(x => accept.includes(x))) label += " (Final)";
+
+    output += label + "\n";
   });
 
   output += "\nTransitions:\n";
@@ -110,8 +224,9 @@ function convert() {
     }
   }
 
-  document.getElementById("output").innerText = output;
+  document.getElementById("dfaOutput").innerText = output;
 }
+
 </script>
 
 </body>
