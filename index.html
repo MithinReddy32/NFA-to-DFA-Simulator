@@ -84,21 +84,21 @@ svg { width: 100%; display: block; }
     <div class="row">
       <div class="field">
         <label>States (Q)</label>
-        <input id="states" value="q0, q1, q2" placeholder="e.g. q0, q1, q2" oninput="buildTable()">
+        <input id="states" value="" placeholder="e.g. q0, q1, q2" oninput="buildTable()">
         <div class="hint">Comma separated</div>
       </div>
       <div class="field">
         <label>Alphabet Σ (no ε)</label>
-        <input id="alpha" value="a, b" placeholder="e.g. a, b" oninput="buildTable()">
+        <input id="alpha" value="" placeholder="e.g. a, b" oninput="buildTable()">
         <div class="hint">Comma separated</div>
       </div>
       <div class="field">
         <label>Initial State (q₀)</label>
-        <input id="start" value="q0" placeholder="e.g. q0" oninput="buildTable()">
+        <input id="start" value="" placeholder="e.g. q0" oninput="buildTable()">
       </div>
       <div class="field">
         <label>Final States (F)</label>
-        <input id="accept" value="q2" placeholder="e.g. q2" oninput="buildTable()">
+        <input id="accept" value="" placeholder="e.g. q2" oninput="buildTable()">
         <div class="hint">Comma separated</div>
       </div>
     </div>
@@ -200,6 +200,7 @@ function buildTable() {
   const alpha  = parse(document.getElementById('alpha').value);
   if (!states.length || !alpha.length) {
     document.getElementById('err1').innerHTML = '<div class="err">Please enter at least one state and one symbol.</div>';
+    document.getElementById('tt-card').style.display = 'none';
     return;
   }
   const syms   = [...alpha, 'ε'];
@@ -218,7 +219,6 @@ function buildTable() {
 
   document.getElementById('tt-card').style.display = 'block';
   document.getElementById('output').style.display = 'none';
-  document.getElementById('tt-card').scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 // ─── Generate DFA ─────────────────────────────────────────────
@@ -436,7 +436,7 @@ function makeEdge(f, t, SR, lbl, bidir) {
 }
 
 // Init
-window.onload = () => { loadExample(); setTimeout(generateDFA, 150); };
+window.onload = () => {};
 </script>
 </body>
 </html>
