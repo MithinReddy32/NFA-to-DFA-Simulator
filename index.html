@@ -151,6 +151,17 @@ svg { width: 100%; display: block; }
       </div>
     </div>
 
+    <div class="out-card">
+      <h2>Simulate String on DFA</h2>
+      <div class="row" style="margin-bottom:12px; grid-template-columns: 1fr auto;">
+        <div class="field" style="margin-bottom:0">
+          <input type="text" id="sim-str" placeholder="Enter test string (e.g. aba)">
+        </div>
+        <button class="btn-go" onclick="runSimulator()">Test</button>
+      </div>
+      <div id="sim-res"></div>
+    </div>
+
   </div>
 </div>
 
@@ -295,6 +306,8 @@ function generateDFA() {
   renderEps(closures);
   renderDFATable(dfaStates, dfaTrans, alpha);
   renderDFAGraph(dfaStates, dfaTrans, alpha);
+  window.CurrentDFA = { states: dfaStates, trans: dfaTrans, alpha: alpha };
+  if(document.getElementById('sim-res')) document.getElementById('sim-res').innerHTML = '';
   document.getElementById('output').style.display = 'block';
   document.getElementById('output').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -433,6 +446,49 @@ function makeEdge(f, t, SR, lbl, bidir) {
     <rect x="${lx-18}" y="${ly-10}" width="36" height="18" rx="4" fill="white" opacity=".9"/>
     <text x="${lx}" y="${ly+1}" text-anchor="middle" dominant-baseline="middle"
       font-family="Segoe UI,sans-serif" font-size="11" fill="#4f46e5" font-weight="700">${lbl}</text>`;
+}
+
+// ─── Simulator ────────────────────────────────────────────────
+function runSimulator() {
+  const strEl = document.getElementById('sim-str');
+  const str = strEl ? strEl.value.trim() : '';
+  const resEl = document.getElementById('sim-res');
+  resEl.innerHTML = '';
+  
+  if (!window.CurrentDFA) return;
+  const { states, trans, alpha } = window.CurrentDFA;
+  
+  const startSt = states.find(s => s.isStart);
+  if (!startSt) {
+    resEl.innerHTML = '<div class="err">No start state found in DFA.</div>';
+    return;
+  }
+  
+  let curr = startSt.id;
+  let pathHTML = `<div style="margin-bottom:12px;font-size:14px;"><strong>Path:</strong> <span class="tag tag-s">${curr}</span>`;
+  
+  for (let i = 0; i < str.length; i++) {
+    const sym = str[i];
+    if (!alpha.includes(sym)) {
+      resEl.innerHTML = `<div class="err">Symbol '${sym}' is not in the alphabet Σ!</div>`;
+      return;
+    }
+    const next = trans[curr][sym];
+    pathHTML += ` ➝ '${sym}' ➝ <span class="tag" style="background:#e0e7ff;color:#4f46e5;">${next}</span>`;
+    curr = next;
+  }
+  pathHTML += `</div>`;
+  
+  const finalState = states.find(s => s.id === curr);
+  const accepted = finalState && finalState.isAcc;
+  
+  const dispStr = str === '' ? 'ε (empty string)' : "'" + str + "'";
+  
+  if (accepted) {
+    resEl.innerHTML = pathHTML + `<div style="background:#d1fae5;color:#065f46;border:1px solid #34d399;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:700;">✅ String ${dispStr} is ACCEPTED</div>`;
+  } else {
+    resEl.innerHTML = pathHTML + `<div style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:10px 14px;border-radius:8px;font-size:14px;font-weight:700;">❌ String ${dispStr} is REJECTED</div>`;
+  }
 }
 
 // Init
